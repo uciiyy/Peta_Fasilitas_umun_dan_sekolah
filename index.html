@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PetaSekolah — Peta Fasilitas Pendidikan Indonesia</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:,">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== TOP BAR ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <path d="M13 2C8 2 4 6 4 10.8C4 17 13 24 13 24C13 24 22 17 22 10.8C22 6 18 2 13 2Z" fill="url(#g1)"/>
+          <circle cx="13" cy="10.5" r="4.2" fill="#fff" fill-opacity="0.92"/>
+          <defs>
+            <linearGradient id="g1" x1="4" y1="2" x2="22" y2="24" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#9BB8FF"/>
+              <stop offset="1" stop-color="#C9A6F5"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </span>
+      <div class="brand-text">
+        <h1>PetaSekolah<span class="dot">.</span></h1>
+        <p>Sebaran Fasilitas Pendidikan &middot; Jakarta, Padang, Jambi, Makassar</p>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="8" cy="8" r="6" stroke="#8A86A0" stroke-width="1.8"/><path d="M16 16L12.5 12.5" stroke="#8A86A0" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="searchInput" type="text" placeholder="Cari nama sekolah, contoh: SD Negeri 01…" autocomplete="off">
+      <div id="searchResults" class="search-results hidden"></div>
+    </div>
+
+    <button id="menuToggle" class="menu-toggle" aria-label="Buka panel">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5H17M3 10H17M3 15H12" stroke="#3A3552" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+
+    <section class="panel-block">
+      <h2 class="block-title">Pilih Kota</h2>
+      <div class="city-chips" id="cityChips">
+        <button class="chip chip-all active" data-city="all">Semua Kota</button>
+        <button class="chip" data-city="Jakarta" style="--chip:#A8D8F0">Jakarta</button>
+        <button class="chip" data-city="Padang" style="--chip:#FFD59E">Padang</button>
+        <button class="chip" data-city="Jambi" style="--chip:#B8E8C4">Jambi</button>
+        <button class="chip" data-city="Makassar" style="--chip:#F0C9E8">Makassar</button>
+      </div>
+    </section>
+
+    <section class="panel-block">
+      <h2 class="block-title">Jenjang Pendidikan</h2>
+      <div class="filter-list" id="jenjangFilters"></div>
+    </section>
+
+    <section class="panel-block">
+      <h2 class="block-title">Fasilitas Umum</h2>
+      <div class="toggle-row">
+        <span>Tampilkan fasilitas umum</span>
+        <label class="switch"><input type="checkbox" id="toggleFacilities"><span class="slider"></span></label>
+      </div>
+      <div class="filter-list" id="facilityFilters"></div>
+      <p class="side-hint">Data dari OpenStreetMap (HOTOSM export) &mdash; kesehatan, keamanan, dan peribadatan.</p>
+    </section>
+
+    <section class="panel-block stats-card">
+      <h2 class="block-title">Ringkasan</h2>
+      <div class="stat-grid">
+        <div class="stat-item">
+          <span class="stat-num" id="statTotalSekolah">0</span>
+          <span class="stat-label">Total Sekolah</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" id="statTotalFasilitas">0</span>
+          <span class="stat-label">Fasilitas Umum</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" id="statKecamatan">0</span>
+          <span class="stat-label">Kecamatan Terpetakan</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-block">
+      <h2 class="block-title">Layer Tambahan</h2>
+      <div class="toggle-row">
+        <span>Peta panas (kepadatan sekolah)</span>
+        <label class="switch"><input type="checkbox" id="toggleHeat"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>Buffer jangkauan</span>
+        <label class="switch"><input type="checkbox" id="toggleBuffer"><span class="slider"></span></label>
+      </div>
+      <div class="buffer-sub" id="bufferRadiusRow">
+        <span>Radius jangkauan</span>
+        <select id="bufferRadius">
+          <option value="500">500 m</option>
+          <option value="800" selected>800 m</option>
+          <option value="1200">1,2 km</option>
+          <option value="2000">2 km</option>
+        </select>
+      </div>
+      <div class="buffer-sources" id="bufferSourcesRow">
+        <label class="mini-check"><input type="checkbox" id="bufferSrcSchools" checked> Sekolah</label>
+        <label class="mini-check"><input type="checkbox" id="bufferSrcFacilities"> Fasilitas umum</label>
+      </div>
+      <p class="side-hint" id="bufferHint"></p>
+    </section>
+
+    <section class="panel-block">
+      <h2 class="block-title">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6.2" stroke="#5B5470" stroke-width="1.4"/><path d="M7.5 4.2V7.7L9.8 9.4" stroke="#5B5470" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Sekolah Terdekat
+      </h2>
+      <p class="side-hint">Klik titik mana pun di peta, atau tombol <b>Lokasi saya</b>, untuk menemukan sekolah terdekat.</p>
+      <div class="nearest-list" id="nearestList">
+        <div class="nearest-empty">Belum ada titik dipilih.</div>
+      </div>
+    </section>
+
+    <footer class="sidebar-footer">
+      Dibangun dengan data OpenStreetMap &amp; GADM &middot; UAS WebGIS
+    </footer>
+  </aside>
+
+  <!-- ===== MAP ===== -->
+  <main class="map-area">
+    <div id="map"></div>
+
+    <!-- floating legend -->
+    <div class="legend-card" id="legendCard">
+      <div class="legend-head">
+        <span>Legenda Jenjang</span>
+        <button id="legendToggle">−</button>
+      </div>
+      <div class="legend-body" id="legendBody"></div>
+    </div>
+
+    <!-- floating legend: facilities -->
+    <div class="legend-card legend-card3 hidden" id="legendCard3">
+      <div class="legend-head">
+        <span>Legenda Fasilitas Umum</span>
+        <button id="legendToggle3">−</button>
+      </div>
+      <div class="legend-body" id="legendBody3"></div>
+    </div>
+
+    <!-- floating layer control -->
+    <div class="layer-fab-group">
+      <button class="fab" id="toggleBoundaries" title="Tampilkan/sembunyikan batas kecamatan">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="3" stroke="#5B5470" stroke-width="1.6"/><path d="M2 9H16M9 2V16" stroke="#5B5470" stroke-width="1.4"/></svg>
+      </button>
+      <button class="fab" id="locateBtn" title="Lokasi saya">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.4" fill="#5B5470"/><path d="M9 1V4M9 14V17M1 9H4M14 9H17" stroke="#5B5470" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <button class="fab" id="resetView" title="Reset tampilan">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M15 9a6 6 0 1 1-1.8-4.3" stroke="#5B5470" stroke-width="1.6" stroke-linecap="round"/><path d="M15 2v4h-4" stroke="#5B5470" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="fab" id="toggleBasemap" title="Ganti tampilan peta (terang/gelap)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M15.5 10.2A6.7 6.7 0 1 1 7.8 2.5a5.3 5.3 0 0 0 7.7 7.7Z" stroke="#5B5470" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <!-- popup-style info panel for hovered kecamatan -->
+    <div class="hover-card hidden" id="hoverCard"></div>
+  </main>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+
+<script src="data/schools.js"></script>
+<script src="data/facilities.js"></script>
+<script src="data/boundaries.js"></script>
+<script src="data/city_stats.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
