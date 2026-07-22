@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1c2921">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Peta Sebaran Toko & Batas Wilayah — WebGIS</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="skel-map">
+    <div class="skel-line" style="width:40%"></div>
+    <div class="skel-line" style="width:65%"></div>
+    <div class="skel-line" style="width:30%"></div>
+  </div>
+  <div id="loading-text">memuat wilayah…</div>
+</div>
+
+<div id="app">
+
+  <header>
+    <button id="menu-toggle" class="icon-btn" title="Buka menu">
+      <span>☰</span>
+    </button>
+    <div class="brand-mark"></div>
+    <div class="header-titles">
+      <h1>Peta Sebaran Toko & Batas Wilayah</h1>
+      <div class="sub">webgis.static &middot; sumber: proyek QGIS (OpenStreetMap)</div>
+    </div>
+    <div class="header-right">
+      <button id="theme-toggle" class="icon-btn" title="Ganti tema terang/gelap">
+        <span id="theme-icon">☀</span>
+      </button>
+      <span class="pill">5 kota</span>
+    </div>
+  </header>
+
+  <div id="sidebar-backdrop"></div>
+
+  <aside id="sidebar">
+
+    <div>
+      <div class="section-label">Pilih Kota</div>
+      <div class="city-grid" id="city-grid">
+        <button class="city-btn" data-city="jambi"><span>Kota Jambi</span><span class="code">JMB</span></button>
+        <button class="city-btn" data-city="padang"><span>Kota Padang</span><span class="code">PDG</span></button>
+        <button class="city-btn" data-city="yogyakarta"><span>Kota Yogyakarta</span><span class="code">YGY</span></button>
+        <button class="city-btn" data-city="surabaya"><span>Kota Surabaya</span><span class="code">SBY</span></button>
+        <button class="city-btn" data-city="makassar"><span>Kota Makassar</span><span class="code">MKS</span></button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Cari Toko</div>
+      <div class="field">
+        <input type="text" id="search-box" class="search-box" placeholder="ketik nama toko…">
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Peta Dasar</div>
+      <div class="basemap-grid">
+        <button class="basemap-btn active" data-basemap="dark">🗺️ Peta</button>
+        <button class="basemap-btn" data-basemap="satellite">🛰️ Satelit</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Layer</div>
+      <div class="toggle-row">
+        <span>Batas wilayah</span>
+        <div class="switch on" id="switch-boundary"><div class="dot"></div></div>
+      </div>
+      <div class="toggle-row">
+        <span>Titik toko</span>
+        <div class="switch on" id="switch-shops"><div class="dot"></div></div>
+      </div>
+      <div class="toggle-row">
+        <span>Heatmap kepadatan toko</span>
+        <div class="switch" id="switch-heatmap"><div class="dot"></div></div>
+      </div>
+      <div class="toggle-row">
+        <span>Buffer toko</span>
+        <div class="switch" id="switch-buffer"><div class="dot"></div></div>
+      </div>
+      <div class="field buffer-radius-field hidden" id="buffer-radius-field">
+        <select id="buffer-radius" class="search-box">
+          <option value="100">radius 100 m</option>
+          <option value="250" selected>radius 250 m</option>
+          <option value="500">radius 500 m</option>
+          <option value="1000">radius 1 km</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Kategori Toko</div>
+      <div class="kategori-list" id="kategori-list"></div>
+    </div>
+
+    <div>
+      <div class="section-label">Statistik Kategori</div>
+      <div class="chart-box">
+        <canvas id="kategori-chart" height="150"></canvas>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Alat</div>
+      <div class="tool-grid">
+        <button class="tool-btn" id="tool-measure">
+          <span class="tool-ic">📏</span><span>Ukur Jarak</span>
+        </button>
+        <button class="tool-btn" id="tool-nearest">
+          <span class="tool-ic">📍</span><span>Toko Terdekat</span>
+        </button>
+        <button class="tool-btn" id="tool-export">
+          <span class="tool-ic">⬇</span><span>Unduh CSV</span>
+        </button>
+      </div>
+      <div id="tool-hint" class="tool-hint hidden"></div>
+      <div id="nearest-list" class="nearest-list hidden"></div>
+    </div>
+
+    <div>
+      <div class="section-label">Info Wilayah</div>
+      <div class="info-panel" id="info-panel-body">
+        <p class="info-empty">Klik salah satu poligon wilayah pada peta untuk melihat detailnya di sini.</p>
+      </div>
+    </div>
+
+    <div class="credit">
+      Data batas administrasi &amp; titik toko diekspor dari<br>
+      proyek QGIS (.geojson / .qmd) menjadi JavaScript statis.<br>
+      Peta dasar © OpenStreetMap / CARTO.<br>
+      Dibuat oleh <b>Suci Syafitri</b>.
+    </div>
+
+  </aside>
+
+  <div id="map">
+    <div id="map-credit">by Suci Syafitri</div>
+  </div>
+
+  <div id="statusbar">
+    <span id="st-coords">lon <b>–</b> &nbsp; lat <b>–</b></span>
+    <span id="st-zoom">zoom <b>5</b></span>
+    <span class="grow"></span>
+    <span id="st-visible"><b>–</b> tampil</span>
+    <span id="st-count"><b>–</b> wilayah / <b>–</b> toko</span>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://unpkg.com/chart.js@4.4.4/dist/chart.umd.js"></script>
+<script src="data_js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
